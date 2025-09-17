@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Interactive Ubuntu Server Setup Script
 # This script provides a user-friendly interactive interface for Ubuntu server setup
