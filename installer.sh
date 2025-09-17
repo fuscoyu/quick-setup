@@ -80,7 +80,7 @@ check_prerequisites() {
         log_warning "No internet connectivity detected"
         printf "Some features may not work without internet access.\n"
         printf "Continue anyway? (y/N): "
-        read -r confirm
+        read -r confirm < /dev/tty
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
             exit 0
         fi
@@ -199,7 +199,7 @@ validate_port() {
     if [ "$port" -lt 1024 ] && [ "$port" != "22" ]; then
         printf "⚠️  Warning: Port %s is a privileged port (< 1024)\n" "$port"
         printf "Continue? (y/N): "
-        read -r confirm
+        read -r confirm < /dev/tty
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
             return 1
         fi
@@ -223,7 +223,7 @@ get_hostname() {
         printf "${CYAN}📝 Server Hostname Configuration${NC}\n"
         printf "Enter a hostname for this server (e.g., web-server, db-server):\n"
         printf "Hostname: "
-        read -r hostname
+        read -r hostname < /dev/tty
         
         if [ -n "$hostname" ] && validate_hostname "$hostname"; then
             break
@@ -241,7 +241,7 @@ get_username() {
         printf "${CYAN}👤 User Account Configuration${NC}\n"
         printf "Enter a username to create (default: ubuntu):\n"
         printf "Username: "
-        read -r username
+        read -r username < /dev/tty
         
         if [ -z "$username" ]; then
             username="ubuntu"
@@ -251,7 +251,7 @@ get_username() {
             if id "$username" >/dev/null 2>&1; then
                 printf "⚠️  User '%s' already exists\n" "$username"
                 printf "Continue with existing user? (y/N): "
-                read -r confirm
+                read -r confirm < /dev/tty
                 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
                     username=""
                 else
@@ -274,8 +274,8 @@ get_password() {
     printf "\n"
     printf "${CYAN}🔐 Password Configuration${NC}\n"
     printf "Set a password for the user account?\n"
-    printf "Set password? (y/N): "
-    read -r set_password
+        printf "Set password? (y/N): "
+        read -r set_password < /dev/tty
     
     if [ "$set_password" = "y" ] || [ "$set_password" = "Y" ]; then
         while [ -z "$password" ] || [ "$password" != "$password_confirm" ]; do
@@ -288,10 +288,10 @@ get_password() {
             printf "\n"
             
             printf "Enter password: "
-            read -rs password
+            read -rs password < /dev/tty
             printf "\n"
             printf "Confirm password: "
-            read -rs password_confirm
+            read -rs password_confirm < /dev/tty
             printf "\n"
             
             if [ -z "$password" ]; then
@@ -318,13 +318,13 @@ get_ssh_key() {
     printf "Example: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC...\n"
     printf "\n"
     printf "SSH Public Key: "
-    read -r ssh_key
+    read -r ssh_key < /dev/tty
     
     if [ -n "$ssh_key" ]; then
         if ! validate_ssh_key "$ssh_key"; then
             printf "\n"
             printf "Continue with invalid key format? (y/N): "
-            read -r confirm
+            read -r confirm < /dev/tty
             if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
                 ssh_key=""
             fi
@@ -341,7 +341,7 @@ get_ssh_port() {
         printf "Default SSH port is 22, but using a custom port increases security.\n"
         printf "Enter SSH port (default: 22222):\n"
         printf "SSH Port: "
-        read -r ssh_port
+        read -r ssh_port < /dev/tty
         
         if [ -z "$ssh_port" ]; then
             ssh_port="22222"
@@ -375,7 +375,7 @@ get_bbr_option() {
     
     while [ -z "$enable_bbr" ]; do
         printf "Enable BBR TCP congestion control? (y/N): "
-        read -r enable_bbr
+        read -r enable_bbr < /dev/tty
         
         if [ -z "$enable_bbr" ]; then
             enable_bbr="n"
@@ -390,7 +390,7 @@ get_bbr_option() {
                 printf "❌ BBR module not available in current kernel\n"
                 printf "   BBR requires Linux kernel 4.9+ with BBR support\n"
                 printf "Continue anyway (may fail)? (y/N): "
-                read -r confirm
+                read -r confirm < /dev/tty
                 if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                     break
                 else
@@ -464,7 +464,7 @@ confirm_execution() {
     printf "\n"
     
     printf "Do you want to proceed with this configuration? (y/N): "
-    read -r confirm
+    read -r confirm < /dev/tty
     if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
         printf "\n"
         log_info "Configuration cancelled by user."
