@@ -217,8 +217,6 @@ validate_port() {
 
 # Interactive input functions
 get_hostname() {
-    # Temporarily disable exit on error for interactive functions
-    set +e
     hostname=""
     while [ -z "$hostname" ]; do
         printf "\n"
@@ -227,19 +225,16 @@ get_hostname() {
         printf "Hostname: "
         read -r hostname
         
-        if validate_hostname "$hostname"; then
+        if [ -n "$hostname" ] && validate_hostname "$hostname"; then
             break
         else
             hostname=""
         fi
     done
-    # Re-enable exit on error
-    set -e
     echo "$hostname"
 }
 
 get_username() {
-    set +e
     username=""
     while [ -z "$username" ]; do
         printf "\n"
@@ -269,12 +264,10 @@ get_username() {
             username=""
         fi
     done
-    set -e
     echo "$username"
 }
 
 get_password() {
-    set +e
     password=""
     password_confirm=""
     
@@ -311,12 +304,10 @@ get_password() {
             fi
         done
     fi
-    set -e
     echo "$password"
 }
 
 get_ssh_key() {
-    set +e
     ssh_key=""
     
     printf "\n"
@@ -339,12 +330,10 @@ get_ssh_key() {
             fi
         fi
     fi
-    set -e
     echo "$ssh_key"
 }
 
 get_ssh_port() {
-    set +e
     ssh_port=""
     while [ -z "$ssh_port" ]; do
         printf "\n"
@@ -362,12 +351,10 @@ get_ssh_port() {
             ssh_port=""
         fi
     done
-    set -e
     echo "$ssh_port"
 }
 
 get_bbr_option() {
-    set +e
     enable_bbr=""
     
     printf "\n"
@@ -421,7 +408,6 @@ get_bbr_option() {
     else
         echo "false"
     fi
-    set -e
 }
 
 # Configuration summary
