@@ -793,7 +793,7 @@ main() {
     PASSWORD=""
     SSH_KEY=""
     SSH_PORT=""
-    ENABLE_BBR="false"
+    ENABLE_BBR=true
     INTERACTIVE_MODE=true
     
     while [ $# -gt 0 ]; do
