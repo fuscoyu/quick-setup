@@ -219,16 +219,16 @@ validate_port() {
 get_hostname() {
     HOSTNAME=""
     while [ -z "$HOSTNAME" ]; do
-        printf "\n"
-        printf "${CYAN}📝 Server Hostname Configuration${NC}\n"
-        printf "Enter a hostname for this server (e.g., web-server, db-server):\n"
-        printf "Hostname: "
-        read -r HOSTNAME < /dev/tty
+        echo ""
+        echo -e "${CYAN}📝 Server Hostname Configuration${NC}"
+        echo "Enter a hostname for this server (e.g., web-server, db-server):"
+        echo -n "Hostname: "
+        read -r HOSTNAME
         
-        if [ -n "$HOSTNAME" ] && validate_hostname "$HOSTNAME"; then
+        if validate_hostname "$HOSTNAME"; then
             break
         else
-            HOSTNAME=""
+            echo "Invalid hostname, please try again"
         fi
     done
     echo "$HOSTNAME"
@@ -237,10 +237,10 @@ get_hostname() {
 get_username() {
     USERNAME=""
     while [ -z "$USERNAME" ]; do
-        printf "\n"
-        printf "${CYAN}👤 User Account Configuration${NC}\n"
-        printf "Enter a username to create (default: ubuntu):\n"
-        printf "Username: "
+        echo ""
+        echo -e "${CYAN}👤 User Account Configuration${NC}"
+        echo "Enter a username to create (default: ubuntu):"
+        echo -n "Username: "
         read -r USERNAME < /dev/tty
         
         if [ -z "$USERNAME" ]; then
@@ -249,8 +249,8 @@ get_username() {
         
         if validate_username "$USERNAME"; then
             if id "$USERNAME" >/dev/null 2>&1; then
-                printf "⚠️  User '%s' already exists\n" "$USERNAME"
-                printf "Continue with existing user? (y/N): "
+                echo -e "⚠️  User '$USERNAME' already exists"
+                echo -n "Continue with existing user? (y/N): "
                 read -r confirm < /dev/tty
                 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
                     USERNAME=""
@@ -271,10 +271,10 @@ get_password() {
     PASSWORD=""
     PASSWORD_CONFIRM=""
     
-    printf "\n"
-    printf "${CYAN}🔐 Password Configuration${NC}\n"
-    printf "Set a password for the user account?\n"
-        printf "Set password? (y/N): "
+    echo ""
+    echo -e "${CYAN}🔐 Password Configuration${NC}"
+    echo "Set a password for the user account?"
+    echo -n "Set password? (y/N): "
         read -r set_password < /dev/tty
     
     if [ "$set_password" = "y" ] || [ "$set_password" = "Y" ]; then
