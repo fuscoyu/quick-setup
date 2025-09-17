@@ -4,10 +4,59 @@
 # Unified script for Ubuntu server configuration with security hardening and Docker installation
 # Compatible with both bash and sh
 # Author: Quick Setup
-# Version: 1.0
+# Version: 1.1
+# Inspired by haoel's Ubuntu automation scripts
+# GitHub: https://github.com/haoel/haoel.github.io/blob/master/scripts/install.ubuntu.18.04.sh
 
-# Use set -e for error handling, but be careful with interactive functions
+# Exit on any error
 set -e
+
+# Set strict mode for better error handling
+set -u
+
+# Check for help option before requiring root
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    cat << 'EOF'
+Ubuntu Server Setup Installer v1.1
+
+Usage: sudo sh installer.sh [OPTIONS]
+
+Interactive Mode (default):
+    sudo sh installer.sh                 # Run with interactive feature selection menu
+
+Non-Interactive Mode:
+    sudo sh installer.sh --hostname HOSTNAME [OPTIONS]
+
+Options:
+    --hostname HOSTNAME    Set server hostname
+    --username USERNAME    Set username (default: ubuntu)
+    --password PASSWORD    Set user password (optional)
+    --ssh-key KEY          Set SSH public key
+    --ssh-port PORT        Set SSH port (default: 22222)
+    --enable-bbr           Enable BBR TCP congestion control
+    --help, -h             Show this help message
+
+Features:
+    🎯 Configure All Features (A) - Complete server setup
+    🔧 Selective Configuration (S) - Choose individual features
+    🛠️  Development Setup (D) - Focus on development tools
+
+Examples:
+    sudo sh installer.sh                                    # Interactive mode
+    sudo sh installer.sh --hostname web-server             # Non-interactive mode
+    sudo sh installer.sh --hostname db-server --enable-bbr # With BBR enabled
+
+Inspired by haoel's Ubuntu automation scripts:
+https://github.com/haoel/haoel.github.io/blob/master/scripts/install.ubuntu.18.04.sh
+EOF
+    exit 0
+fi
+
+# Ensure we're running as root for system modifications
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root (use sudo)"
+    exit 1
+fi
 
 # Colors for output (compatible with sh)
 RED='\033[0;31m'
@@ -43,6 +92,53 @@ log_step() {
 error_exit() {
     log_error "$1"
     exit 1
+}
+
+# Progress indicator (inspired by haoel's scripts)
+show_progress() {
+    local current=$1
+    local total=$2
+    local description=$3
+    local percent=$((current * 100 / total))
+    printf "\r${CYAN}[%d/%d] (%d%%) %s${NC}" "$current" "$total" "$percent" "$description"
+    if [ $current -eq $total ]; then
+        echo ""
+    fi
+}
+
+# Check if command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Safe download function (inspired by haoel's approach)
+safe_download() {
+    local url=$1
+    local output=$2
+    local max_retries=3
+    local retry_count=0
+    
+    while [ $retry_count -lt $max_retries ]; do
+        if curl -fsSL "$url" -o "$output"; then
+            return 0
+        else
+            retry_count=$((retry_count + 1))
+            log_warning "Download failed, retrying... ($retry_count/$max_retries)"
+            sleep 2
+        fi
+    done
+    
+    log_error "Failed to download $url after $max_retries attempts"
+    return 1
+}
+
+# Backup original files before modification (haoel's best practice)
+backup_file() {
+    local file=$1
+    if [ -f "$file" ] && [ ! -f "$file.backup.$(date +%Y%m%d_%H%M%S)" ]; then
+        cp "$file" "$file.backup.$(date +%Y%m%d_%H%M%S)"
+        log_info "Backed up $file"
+    fi
 }
 
 # ASCII Art Banner
@@ -213,6 +309,447 @@ validate_port() {
     
     printf "✅ Port %s is available\n" "$PORT"
     return 0
+}
+
+# Feature selection menu
+show_feature_menu() {
+    clear
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║              🎛️  Ubuntu Server Setup Features              ║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${GREEN}📋 Available Configuration Options:${NC}"
+    echo ""
+    echo -e "  ${YELLOW}1.${NC} 🖥️  Server Hostname Configuration"
+    echo -e "     • Set custom hostname for the server"
+    echo -e "     • Validate hostname format and length"
+    echo ""
+    echo -e "  ${YELLOW}2.${NC} 👤 User Account Management"
+    echo -e "     • Create new Ubuntu user account"
+    echo -e "     • Configure passwordless sudo access"
+    echo -e "     • Set user password (optional)"
+    echo ""
+    echo -e "  ${YELLOW}3.${NC} 🔐 SSH Security Hardening"
+    echo -e "     • Add SSH public key for authentication"
+    echo -e "     • Change SSH port (default: 22222)"
+    echo -e "     • Disable root login"
+    echo -e "     • Disable password authentication"
+    echo ""
+    echo -e "  ${YELLOW}4.${NC} 🐳 Docker Installation"
+    echo -e "     • Remove old Docker versions"
+    echo -e "     • Install Docker CE and Docker Compose"
+    echo -e "     • Configure Docker service"
+    echo -e "     • Add user to docker group"
+    echo ""
+    echo -e "  ${YELLOW}5.${NC} 🔥 Firewall Configuration"
+    echo -e "     • Configure UFW firewall"
+    echo -e "     • Allow SSH on custom port"
+    echo -e "     • Enable firewall protection"
+    echo ""
+    echo -e "  ${YELLOW}6.${NC} 🚀 BBR Network Optimization"
+    echo -e "     • Enable BBR TCP congestion control"
+    echo -e "     • Improve network performance"
+    echo -e "     • Reduce latency and bufferbloat"
+    echo ""
+    echo -e "  ${YELLOW}7.${NC} 📦 System Updates"
+    echo -e "     • Update package lists"
+    echo -e "     • Upgrade system packages"
+    echo ""
+    echo -e "  ${YELLOW}8.${NC} 🔧 Security Best Practices"
+    echo -e "     • Apply security recommendations"
+    echo -e "     • Configure system hardening"
+    echo ""
+    echo -e "  ${YELLOW}9.${NC} 🛠️  Development Tools (Inspired by haoel's script)"
+    echo -e "     • Install Git, curl, wget, vim, tmux"
+    echo -e "     • Install build-essential, python3, pip"
+    echo -e "     • Configure development environment"
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║                        Configuration Options                ║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  ${GREEN}A)${NC} 🎯 Configure All Features (Recommended for new servers)"
+    echo -e "  ${GREEN}S)${NC} 🔧 Selective Configuration (Choose individual features)"
+    echo -e "  ${GREEN}D)${NC} 🛠️  Development Setup (Focus on development tools)"
+    echo -e "  ${GREEN}Q)${NC} ❌ Quit Setup"
+    echo ""
+}
+
+get_feature_selection() {
+    while true; do
+        show_feature_menu
+        echo -n "Please select an option (A/S/D/Q): "
+        read -r choice < /dev/tty
+        case "$choice" in
+            [Aa])
+                echo -e "${GREEN}✅ Selected: Configure All Features${NC}"
+                echo "all"
+                return
+                ;;
+            [Ss])
+                echo -e "${GREEN}✅ Selected: Selective Configuration${NC}"
+                echo "selective"
+                return
+                ;;
+            [Dd])
+                echo -e "${GREEN}✅ Selected: Development Setup${NC}"
+                echo "development"
+                return
+                ;;
+            [Qq])
+                echo -e "${YELLOW}👋 Setup cancelled by user${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}❌ Invalid option. Please choose A, S, D, or Q.${NC}"
+                sleep 2
+                ;;
+        esac
+    done
+}
+
+get_selective_features() {
+    local selected_features=""
+    
+    echo ""
+    echo -e "${CYAN}🎯 Selective Feature Configuration${NC}"
+    echo "Select the features you want to configure (y/n for each):"
+    echo ""
+    
+    # Feature 1: Hostname
+    echo -n "1. Configure server hostname? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,hostname"
+        echo -e "${GREEN}✓ Hostname configuration enabled${NC}"
+    fi
+    
+    # Feature 2: User Account
+    echo -n "2. Configure user account? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,user"
+        echo -e "${GREEN}✓ User account configuration enabled${NC}"
+    fi
+    
+    # Feature 3: SSH Security
+    echo -n "3. Configure SSH security? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,ssh"
+        echo -e "${GREEN}✓ SSH security configuration enabled${NC}"
+    fi
+    
+    # Feature 4: Docker
+    echo -n "4. Install Docker? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,docker"
+        echo -e "${GREEN}✓ Docker installation enabled${NC}"
+    fi
+    
+    # Feature 5: Firewall
+    echo -n "5. Configure firewall? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,firewall"
+        echo -e "${GREEN}✓ Firewall configuration enabled${NC}"
+    fi
+    
+    # Feature 6: BBR
+    echo -n "6. Enable BBR network optimization? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,bbr"
+        echo -e "${GREEN}✓ BBR optimization enabled${NC}"
+    fi
+    
+    # Feature 7: System Updates
+    echo -n "7. Update system packages? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,updates"
+        echo -e "${GREEN}✓ System updates enabled${NC}"
+    fi
+    
+    # Feature 8: Security Best Practices
+    echo -n "8. Apply security best practices? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,security"
+        echo -e "${GREEN}✓ Security hardening enabled${NC}"
+    fi
+    
+    # Feature 9: Development Tools
+    echo -n "9. Install development tools? (y/N): "
+    read -r choice < /dev/tty
+    if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
+        selected_features="$selected_features,devtools"
+        echo -e "${GREEN}✓ Development tools enabled${NC}"
+    fi
+    
+    echo ""
+    echo -e "${GREEN}📋 Selected Features:${NC}"
+    echo "$selected_features" | tr ',' '\n' | grep -v '^$' | sed 's/^/  • /'
+    echo ""
+    
+    echo -n "Proceed with selected features? (y/N): "
+    read -r confirm < /dev/tty
+    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+        echo -e "${YELLOW}Configuration cancelled${NC}"
+        exit 0
+    fi
+    
+    echo "$selected_features"
+}
+
+# Development tools installation (inspired by haoel's script)
+install_development_tools() {
+    log_step "Installing development tools and essential packages..."
+    
+    # Essential packages
+    local packages="curl wget git vim tmux build-essential software-properties-common apt-transport-https ca-certificates gnupg lsb-release"
+    
+    show_progress 1 4 "Updating package lists..."
+    apt-get update -y >/dev/null 2>&1 || error_exit "Failed to update package lists"
+    
+    show_progress 2 4 "Installing essential packages..."
+    apt-get install -y $packages >/dev/null 2>&1 || error_exit "Failed to install essential packages"
+    
+    show_progress 3 4 "Installing Python3 and pip..."
+    apt-get install -y python3 python3-pip python3-venv >/dev/null 2>&1 || error_exit "Failed to install Python3"
+    
+    show_progress 4 4 "Installing Node.js (if available)..."
+    if command_exists curl; then
+        # Try to install Node.js using NodeSource repository
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - >/dev/null 2>&1 || log_warning "Node.js installation failed, skipping..."
+        apt-get install -y nodejs >/dev/null 2>&1 || log_warning "Node.js installation failed, skipping..."
+    fi
+    
+    log_success "Development tools installation completed"
+}
+
+configure_development_setup() {
+    local has_ssh_key="false"
+    local has_password="false"
+    
+    echo ""
+    echo -e "${CYAN}🛠️  Starting Development Setup${NC}"
+    echo "═══════════════════════════════════════════════════════════════"
+    
+    # Step 1: Install development tools
+    echo ""
+    echo -e "${YELLOW}[STEP 1/6]${NC} Installing development tools..."
+    install_development_tools
+    
+    # Step 2: Configure user account (if not already done)
+    echo ""
+    echo -e "${YELLOW}[STEP 2/6]${NC} Configuring user account..."
+    if [ -z "$USERNAME" ]; then
+        USERNAME=$(get_username)
+    fi
+    if [ -z "$PASSWORD" ]; then
+        PASSWORD=$(get_password)
+        if [ -n "$PASSWORD" ]; then
+            has_password="true"
+        fi
+    fi
+    
+    # Step 3: Configure SSH (essential for development)
+    echo ""
+    echo -e "${YELLOW}[STEP 3/6]${NC} Configuring SSH security..."
+    if [ -z "$SSH_KEY" ]; then
+        SSH_KEY=$(get_ssh_key)
+        if [ -n "$SSH_KEY" ]; then
+            has_ssh_key="true"
+        fi
+    fi
+    if [ -z "$SSH_PORT" ]; then
+        SSH_PORT=$(get_ssh_port)
+    fi
+    
+    # Step 4: Update system
+    echo ""
+    echo -e "${YELLOW}[STEP 4/6]${NC} Updating system packages..."
+    update_system_packages
+    
+    # Step 5: Install Docker (useful for development)
+    echo ""
+    echo -e "${YELLOW}[STEP 5/6]${NC} Installing Docker..."
+    install_docker "$USERNAME"
+    
+    # Step 6: Apply basic security
+    echo ""
+    echo -e "${YELLOW}[STEP 6/6]${NC} Applying basic security settings..."
+    apply_security_best_practices "$HOSTNAME" "$USERNAME" "$SSH_PORT" "$has_ssh_key" "$has_password"
+    
+    echo ""
+    echo -e "${GREEN}✅ Development setup completed successfully!${NC}"
+}
+
+configure_selective_features() {
+    local features="$1"
+    local has_ssh_key="false"
+    local has_password="false"
+    
+    echo ""
+    echo -e "${CYAN}🔧 Starting Selective Configuration${NC}"
+    echo "═══════════════════════════════════════════════════════════════"
+    
+    # Check if hostname configuration is selected
+    if echo "$features" | grep -q "hostname"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 1/8]${NC} Configuring server hostname..."
+        if [ -z "$HOSTNAME" ]; then
+            HOSTNAME=$(get_hostname)
+        fi
+    fi
+    
+    # Check if user account configuration is selected
+    if echo "$features" | grep -q "user"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 2/8]${NC} Configuring user account..."
+        if [ -z "$USERNAME" ]; then
+            USERNAME=$(get_username)
+        fi
+        if [ -z "$PASSWORD" ]; then
+            PASSWORD=$(get_password)
+            if [ -n "$PASSWORD" ]; then
+                has_password="true"
+            fi
+        fi
+    fi
+    
+    # Check if SSH security configuration is selected
+    if echo "$features" | grep -q "ssh"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 3/8]${NC} Configuring SSH security..."
+        if [ -z "$SSH_KEY" ]; then
+            SSH_KEY=$(get_ssh_key)
+            if [ -n "$SSH_KEY" ]; then
+                has_ssh_key="true"
+            fi
+        fi
+        if [ -z "$SSH_PORT" ]; then
+            SSH_PORT=$(get_ssh_port)
+        fi
+    fi
+    
+    # Check if system updates are selected
+    if echo "$features" | grep -q "updates"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 4/8]${NC} Updating system packages..."
+        update_system_packages
+    fi
+    
+    # Check if Docker installation is selected
+    if echo "$features" | grep -q "docker"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 5/8]${NC} Installing Docker..."
+        install_docker "$USERNAME"
+    fi
+    
+    # Check if firewall configuration is selected
+    if echo "$features" | grep -q "firewall"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 6/8]${NC} Configuring firewall..."
+        configure_firewall "$SSH_PORT"
+    fi
+    
+    # Check if BBR optimization is selected
+    if echo "$features" | grep -q "bbr"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 7/8]${NC} Enabling BBR optimization..."
+        enable_bbr
+    fi
+    
+    # Check if security best practices are selected
+    if echo "$features" | grep -q "security"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 8/9]${NC} Applying security best practices..."
+        apply_security_best_practices "$HOSTNAME" "$USERNAME" "$SSH_PORT" "$has_ssh_key" "$has_password"
+    fi
+    
+    # Check if development tools are selected
+    if echo "$features" | grep -q "devtools"; then
+        echo ""
+        echo -e "${YELLOW}[STEP 9/9]${NC} Installing development tools..."
+        install_development_tools
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✅ Selective configuration completed successfully!${NC}"
+}
+
+configure_all_features() {
+    local has_ssh_key="false"
+    local has_password="false"
+    
+    echo ""
+    echo -e "${CYAN}🎯 Starting Complete Configuration${NC}"
+    echo "═══════════════════════════════════════════════════════════════"
+    
+    # Step 1: Configure hostname
+    echo ""
+    echo -e "${YELLOW}[STEP 1/8]${NC} Configuring server hostname..."
+    if [ -z "$HOSTNAME" ]; then
+        HOSTNAME=$(get_hostname)
+    fi
+    
+    # Step 2: Configure user account
+    echo ""
+    echo -e "${YELLOW}[STEP 2/8]${NC} Configuring user account..."
+    if [ -z "$USERNAME" ]; then
+        USERNAME=$(get_username)
+    fi
+    if [ -z "$PASSWORD" ]; then
+        PASSWORD=$(get_password)
+        if [ -n "$PASSWORD" ]; then
+            has_password="true"
+        fi
+    fi
+    
+    # Step 3: Configure SSH security
+    echo ""
+    echo -e "${YELLOW}[STEP 3/8]${NC} Configuring SSH security..."
+    if [ -z "$SSH_KEY" ]; then
+        SSH_KEY=$(get_ssh_key)
+        if [ -n "$SSH_KEY" ]; then
+            has_ssh_key="true"
+        fi
+    fi
+    if [ -z "$SSH_PORT" ]; then
+        SSH_PORT=$(get_ssh_port)
+    fi
+    
+    # Step 4: Update system packages
+    echo ""
+    echo -e "${YELLOW}[STEP 4/8]${NC} Updating system packages..."
+    update_system_packages
+    
+    # Step 5: Install Docker
+    echo ""
+    echo -e "${YELLOW}[STEP 5/8]${NC} Installing Docker..."
+    install_docker "$USERNAME"
+    
+    # Step 6: Configure firewall
+    echo ""
+    echo -e "${YELLOW}[STEP 6/8]${NC} Configuring firewall..."
+    configure_firewall "$SSH_PORT"
+    
+    # Step 7: Enable BBR optimization
+    echo ""
+    echo -e "${YELLOW}[STEP 7/8]${NC} Enabling BBR optimization..."
+    enable_bbr
+    
+    # Step 8: Apply security best practices
+    echo ""
+    echo -e "${YELLOW}[STEP 8/8]${NC} Applying security best practices..."
+    apply_security_best_practices "$HOSTNAME" "$USERNAME" "$SSH_PORT" "$has_ssh_key" "$has_password"
+    
+    echo ""
+    echo -e "${GREEN}✅ Complete configuration finished successfully!${NC}"
 }
 
 # Interactive input functions
@@ -862,49 +1399,26 @@ main() {
     # Check prerequisites
     check_prerequisites
     
-    # Interactive mode - collect missing parameters
+    # Interactive mode - feature selection and configuration
     if [ "$INTERACTIVE_MODE" = true ]; then
         log_info "Running in interactive mode..."
-        printf "\n"
         
-        # Get hostname
-        if [ -z "$HOSTNAME" ]; then
-            HOSTNAME=$(get_hostname)
+        # Show feature selection menu
+        feature_selection=$(get_feature_selection)
+        
+        if [ "$feature_selection" = "selective" ]; then
+            # Get selected features
+            selected_features=$(get_selective_features)
+            
+            # Configure selected features
+            configure_selective_features "$selected_features"
+        elif [ "$feature_selection" = "development" ]; then
+            # Configure development setup
+            configure_development_setup
+        else
+            # Configure all features
+            configure_all_features
         fi
-        
-        # Get username
-        if [ -z "$USERNAME" ]; then
-            USERNAME=$(get_username)
-        fi
-        
-        # Get password
-        if [ -z "$PASSWORD" ]; then
-            PASSWORD=$(get_password)
-        fi
-        
-        # Get SSH key
-        if [ -z "$SSH_KEY" ]; then
-            SSH_KEY=$(get_ssh_key)
-        fi
-        
-        # Get SSH port
-        if [ -z "$SSH_PORT" ]; then
-            SSH_PORT=$(get_ssh_port)
-        fi
-        
-        # Get BBR option
-        if [ "$ENABLE_BBR" = "false" ]; then
-            ENABLE_BBR=$(get_bbr_option)
-        fi
-        
-        # Show configuration summary
-        show_configuration_summary "$HOSTNAME" "$USERNAME" "$SSH_PORT" \
-            "$(if [ -n "$PASSWORD" ]; then echo "true"; else echo "false"; fi)" \
-            "$(if [ -n "$SSH_KEY" ]; then echo "true"; else echo "false"; fi)" \
-            "$ENABLE_BBR"
-        
-        # Confirm configuration
-        confirm_execution "$HOSTNAME" "$SSH_PORT"
     else
         # Non-interactive mode - validate required parameters
         if [ -z "$HOSTNAME" ]; then
