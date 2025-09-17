@@ -6,6 +6,7 @@
 # Author: Quick Setup
 # Version: 1.0
 
+# Use set -e for error handling, but be careful with interactive functions
 set -e
 
 # Colors for output (compatible with sh)
@@ -99,7 +100,7 @@ validate_hostname() {
     fi
     
     # Basic hostname validation
-    if ! echo "$hostname" | grep -qE '^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$'; then
+    if ! echo "$hostname" | grep -qE '^[a-zA-Z0-9][a-zA-Z0-9-]*$'; then
         printf "❌ Invalid hostname format\n"
         printf "   Use only alphanumeric characters and hyphens\n"
         return 1
@@ -216,6 +217,8 @@ validate_port() {
 
 # Interactive input functions
 get_hostname() {
+    # Temporarily disable exit on error for interactive functions
+    set +e
     hostname=""
     while [ -z "$hostname" ]; do
         printf "\n"
@@ -230,10 +233,13 @@ get_hostname() {
             hostname=""
         fi
     done
+    # Re-enable exit on error
+    set -e
     echo "$hostname"
 }
 
 get_username() {
+    set +e
     username=""
     while [ -z "$username" ]; do
         printf "\n"
@@ -263,10 +269,12 @@ get_username() {
             username=""
         fi
     done
+    set -e
     echo "$username"
 }
 
 get_password() {
+    set +e
     password=""
     password_confirm=""
     
@@ -303,10 +311,12 @@ get_password() {
             fi
         done
     fi
+    set -e
     echo "$password"
 }
 
 get_ssh_key() {
+    set +e
     ssh_key=""
     
     printf "\n"
@@ -329,10 +339,12 @@ get_ssh_key() {
             fi
         fi
     fi
+    set -e
     echo "$ssh_key"
 }
 
 get_ssh_port() {
+    set +e
     ssh_port=""
     while [ -z "$ssh_port" ]; do
         printf "\n"
@@ -350,10 +362,12 @@ get_ssh_port() {
             ssh_port=""
         fi
     done
+    set -e
     echo "$ssh_port"
 }
 
 get_bbr_option() {
+    set +e
     enable_bbr=""
     
     printf "\n"
@@ -407,6 +421,7 @@ get_bbr_option() {
     else
         echo "false"
     fi
+    set -e
 }
 
 # Configuration summary
@@ -651,31 +666,17 @@ install_docker() {
     systemctl start docker || error_exit "Failed to start Docker"
     systemctl enable docker || error_exit "Failed to enable Docker"
     
+    # Move docker-compose to /usr/bin
+    if [ -f /usr/libexec/docker/cli-plugins/docker-compose ]; then
+        mv /usr/libexec/docker/cli-plugins/docker-compose /usr/bin/docker-compose || error_exit "Failed to move docker-compose to /usr/bin"
+    else
+        log_warning "docker-compose not found, skipping move"
+    fi
+    
     # Add ubuntu user to docker group
     usermod -aG docker ubuntu || error_exit "Failed to add ubuntu user to docker group"
     
     log_success "Docker installed successfully"
-}
-
-install_docker_compose() {
-    log_info "Installing Docker Compose..."
-    
-    # Docker Compose is now included with Docker, but we'll also install the standalone version
-    compose_version="v2.23.0"
-    
-    # Download Docker Compose
-    curl -L "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose || error_exit "Failed to download Docker Compose"
-    
-    # Make it executable
-    chmod +x /usr/local/bin/docker-compose || error_exit "Failed to make Docker Compose executable"
-    
-    # Create symlink for easier access
-    ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose || true
-    
-    # Verify installation
-    docker-compose --version || error_exit "Docker Compose installation verification failed"
-    
-    log_success "Docker Compose installed successfully"
 }
 
 configure_firewall() {
@@ -800,27 +801,7 @@ EOF
 
 # Main function
 main() {
-    # Clear screen and show banner
-    clear
-    show_banner
-    
-    printf "${CYAN}Welcome to the Ubuntu Server Setup Installer!${NC}\n"
-    printf "\n"
-    printf "This unified installer will configure your Ubuntu server with:\n"
-    printf "  ✓ Server hostname and user account\n"
-    printf "  ✓ SSH security hardening\n"
-    printf "  ✓ Docker and Docker Compose installation\n"
-    printf "  ✓ Firewall configuration\n"
-    printf "  ✓ BBR network optimization (optional)\n"
-    printf "\n"
-    printf "${YELLOW}⚠️  Important: This script will make significant changes to your system.${NC}\n"
-    printf "${YELLOW}   Make sure you have a backup and alternative access method.${NC}\n"
-    printf "\n"
-    
-    # Check prerequisites
-    check_prerequisites
-    
-    # Parse command line arguments
+    # Parse command line arguments first to handle --help
     hostname=""
     username=""
     password=""
@@ -874,6 +855,26 @@ main() {
                 ;;
         esac
     done
+    
+    # Clear screen and show banner
+    clear
+    show_banner
+    
+    printf "${CYAN}Welcome to the Ubuntu Server Setup Installer!${NC}\n"
+    printf "\n"
+    printf "This unified installer will configure your Ubuntu server with:\n"
+    printf "  ✓ Server hostname and user account\n"
+    printf "  ✓ SSH security hardening\n"
+    printf "  ✓ Docker and Docker Compose installation\n"
+    printf "  ✓ Firewall configuration\n"
+    printf "  ✓ BBR network optimization (optional)\n"
+    printf "\n"
+    printf "${YELLOW}⚠️  Important: This script will make significant changes to your system.${NC}\n"
+    printf "${YELLOW}   Make sure you have a backup and alternative access method.${NC}\n"
+    printf "\n"
+    
+    # Check prerequisites
+    check_prerequisites
     
     # Interactive mode - collect missing parameters
     if [ "$interactive_mode" = true ]; then
@@ -958,9 +959,6 @@ main() {
     
     # Install Docker
     install_docker
-    
-    # Install Docker Compose
-    install_docker_compose
     
     # Configure firewall
     configure_firewall "$ssh_port"

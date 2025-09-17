@@ -5,10 +5,10 @@
 ### Interactive Mode (Recommended for first-time setup)
 ```bash
 # Download and run interactively
-curl -fsSL https://raw.githubusercontent.com/your-repo/quick-setup/main/installer.sh | sh
+curl -fsSL https://raw.githubusercontent.com/fuscoyu/quick-setup/main/installer.sh | sh
 
 # Or download first, then run
-wget https://raw.githubusercontent.com/your-repo/quick-setup/main/installer.sh
+wget https://raw.githubusercontent.com/fuscoyu/quick-setup/main/installer.sh
 sh installer.sh
 ```
 
