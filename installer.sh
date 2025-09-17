@@ -15,7 +15,7 @@ set -e
 set -u
 
 # Check for help option before requiring root
-if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+if [ $# -gt 0 ] && ([ "$1" = "--help" ] || [ "$1" = "-h" ]); then
     cat << 'EOF'
 Ubuntu Server Setup Installer v1.1
 
