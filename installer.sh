@@ -92,21 +92,21 @@ check_prerequisites() {
 
 # Input validation functions
 validate_hostname() {
-    hostname="$1"
+    HOSTNAME="$1"
     
-    if [ -z "$hostname" ]; then
+    if [ -z "$HOSTNAME" ]; then
         printf "❌ Hostname cannot be empty\n"
         return 1
     fi
     
     # Basic hostname validation
-    if ! echo "$hostname" | grep -qE '^[a-zA-Z0-9][a-zA-Z0-9-]*$'; then
+    if ! echo "$HOSTNAME" | grep -qE '^[a-zA-Z0-9][a-zA-Z0-9-]*$'; then
         printf "❌ Invalid hostname format\n"
         printf "   Use only alphanumeric characters and hyphens\n"
         return 1
     fi
     
-    if [ ${#hostname} -gt 63 ]; then
+    if [ ${#HOSTNAME} -gt 63 ]; then
         printf "❌ Hostname too long (max 63 characters)\n"
         return 1
     fi
@@ -116,20 +116,20 @@ validate_hostname() {
 }
 
 validate_username() {
-    username="$1"
+    USERNAME="$1"
     
-    if [ -z "$username" ]; then
+    if [ -z "$USERNAME" ]; then
         printf "❌ Username cannot be empty\n"
         return 1
     fi
     
-    if ! echo "$username" | grep -qE '^[a-zA-Z][a-zA-Z0-9_-]*$'; then
+    if ! echo "$USERNAME" | grep -qE '^[a-zA-Z][a-zA-Z0-9_-]*$'; then
         printf "❌ Invalid username format\n"
         printf "   Start with a letter, use only letters, numbers, underscores, and hyphens\n"
         return 1
     fi
     
-    if [ ${#username} -gt 32 ]; then
+    if [ ${#USERNAME} -gt 32 ]; then
         printf "❌ Username too long (max 32 characters)\n"
         return 1
     fi
@@ -139,24 +139,24 @@ validate_username() {
 }
 
 validate_password() {
-    password="$1"
+    PASSWORD="$1"
     
-    if [ ${#password} -lt 8 ]; then
+    if [ ${#PASSWORD} -lt 8 ]; then
         printf "❌ Password must be at least 8 characters long\n"
         return 1
     fi
     
-    if ! echo "$password" | grep -q '[A-Z]'; then
+    if ! echo "$PASSWORD" | grep -q '[A-Z]'; then
         printf "❌ Password must contain at least one uppercase letter\n"
         return 1
     fi
     
-    if ! echo "$password" | grep -q '[a-z]'; then
+    if ! echo "$PASSWORD" | grep -q '[a-z]'; then
         printf "❌ Password must contain at least one lowercase letter\n"
         return 1
     fi
     
-    if ! echo "$password" | grep -q '[0-9]'; then
+    if ! echo "$PASSWORD" | grep -q '[0-9]'; then
         printf "❌ Password must contain at least one number\n"
         return 1
     fi
@@ -166,14 +166,14 @@ validate_password() {
 }
 
 validate_ssh_key() {
-    ssh_key="$1"
+    SSH_KEY="$1"
     
-    if [ -z "$ssh_key" ]; then
+    if [ -z "$SSH_KEY" ]; then
         printf "⚠️  No SSH key provided - password authentication will be required\n"
         return 0
     fi
     
-    if ! echo "$ssh_key" | grep -qE '^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521)'; then
+    if ! echo "$SSH_KEY" | grep -qE '^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp256|ecdsa-sha2-nistp384|ecdsa-sha2-nistp521)'; then
         printf "❌ Invalid SSH key format\n"
         printf "   Expected: ssh-rsa, ssh-ed25519, or ecdsa-sha2-*\n"
         return 1
@@ -184,20 +184,20 @@ validate_ssh_key() {
 }
 
 validate_port() {
-    port="$1"
+    PORT="$1"
     
-    if ! echo "$port" | grep -qE '^[0-9]+$'; then
+    if ! echo "$PORT" | grep -qE '^[0-9]+$'; then
         printf "❌ Port must be a number\n"
         return 1
     fi
     
-    if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+    if [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
         printf "❌ Port must be between 1 and 65535\n"
         return 1
     fi
     
-    if [ "$port" -lt 1024 ] && [ "$port" != "22" ]; then
-        printf "⚠️  Warning: Port %s is a privileged port (< 1024)\n" "$port"
+    if [ "$PORT" -lt 1024 ] && [ "$PORT" != "22" ]; then
+        printf "⚠️  Warning: Port %s is a privileged port (< 1024)\n" "$PORT"
         printf "Continue? (y/N): "
         read -r confirm < /dev/tty
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
@@ -206,54 +206,54 @@ validate_port() {
     fi
     
     # Check if port is already in use
-    if netstat -tuln 2>/dev/null | grep -q ":$port "; then
-        printf "❌ Port %s is already in use\n" "$port"
+    if netstat -tuln 2>/dev/null | grep -q ":$PORT "; then
+        printf "❌ Port %s is already in use\n" "$PORT"
         return 1
     fi
     
-    printf "✅ Port %s is available\n" "$port"
+    printf "✅ Port %s is available\n" "$PORT"
     return 0
 }
 
 # Interactive input functions
 get_hostname() {
-    hostname=""
-    while [ -z "$hostname" ]; do
+    HOSTNAME=""
+    while [ -z "$HOSTNAME" ]; do
         printf "\n"
         printf "${CYAN}📝 Server Hostname Configuration${NC}\n"
         printf "Enter a hostname for this server (e.g., web-server, db-server):\n"
         printf "Hostname: "
-        read -r hostname < /dev/tty
+        read -r HOSTNAME < /dev/tty
         
-        if [ -n "$hostname" ] && validate_hostname "$hostname"; then
+        if [ -n "$HOSTNAME" ] && validate_hostname "$HOSTNAME"; then
             break
         else
-            hostname=""
+            HOSTNAME=""
         fi
     done
-    echo "$hostname"
+    echo "$HOSTNAME"
 }
 
 get_username() {
-    username=""
-    while [ -z "$username" ]; do
+    USERNAME=""
+    while [ -z "$USERNAME" ]; do
         printf "\n"
         printf "${CYAN}👤 User Account Configuration${NC}\n"
         printf "Enter a username to create (default: ubuntu):\n"
         printf "Username: "
-        read -r username < /dev/tty
+        read -r USERNAME < /dev/tty
         
-        if [ -z "$username" ]; then
-            username="ubuntu"
+        if [ -z "$USERNAME" ]; then
+            USERNAME="ubuntu"
         fi
         
-        if validate_username "$username"; then
-            if id "$username" >/dev/null 2>&1; then
-                printf "⚠️  User '%s' already exists\n" "$username"
+        if validate_username "$USERNAME"; then
+            if id "$USERNAME" >/dev/null 2>&1; then
+                printf "⚠️  User '%s' already exists\n" "$USERNAME"
                 printf "Continue with existing user? (y/N): "
                 read -r confirm < /dev/tty
                 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-                    username=""
+                    USERNAME=""
                 else
                     break
                 fi
@@ -261,15 +261,15 @@ get_username() {
                 break
             fi
         else
-            username=""
+            USERNAME=""
         fi
     done
-    echo "$username"
+    echo "$USERNAME"
 }
 
 get_password() {
-    password=""
-    password_confirm=""
+    PASSWORD=""
+    PASSWORD_CONFIRM=""
     
     printf "\n"
     printf "${CYAN}🔐 Password Configuration${NC}\n"
@@ -278,7 +278,7 @@ get_password() {
         read -r set_password < /dev/tty
     
     if [ "$set_password" = "y" ] || [ "$set_password" = "Y" ]; then
-        while [ -z "$password" ] || [ "$password" != "$password_confirm" ]; do
+        while [ -z "$PASSWORD" ] || [ "$PASSWORD" != "$PASSWORD_confirm" ]; do
             printf "\n"
             printf "Password requirements:\n"
             printf "  • At least 8 characters\n"
@@ -294,21 +294,21 @@ get_password() {
             read -rs password_confirm < /dev/tty
             printf "\n"
             
-            if [ -z "$password" ]; then
+            if [ -z "$PASSWORD" ]; then
                 printf "❌ Password cannot be empty\n"
-            elif [ "$password" != "$password_confirm" ]; then
+            elif [ "$PASSWORD" != "$PASSWORD_confirm" ]; then
                 printf "❌ Passwords do not match\n"
-                password=""
-            elif ! validate_password "$password"; then
-                password=""
+                PASSWORD=""
+            elif ! validate_password "$PASSWORD"; then
+                PASSWORD=""
             fi
         done
     fi
-    echo "$password"
+    echo "$PASSWORD"
 }
 
 get_ssh_key() {
-    ssh_key=""
+    SSH_KEY=""
     
     printf "\n"
     printf "${CYAN}🔑 SSH Key Configuration${NC}\n"
@@ -320,22 +320,22 @@ get_ssh_key() {
     printf "SSH Public Key: "
     read -r ssh_key < /dev/tty
     
-    if [ -n "$ssh_key" ]; then
-        if ! validate_ssh_key "$ssh_key"; then
+    if [ -n "$SSH_KEY" ]; then
+        if ! validate_ssh_key "$SSH_KEY"; then
             printf "\n"
             printf "Continue with invalid key format? (y/N): "
             read -r confirm < /dev/tty
             if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-                ssh_key=""
+                SSH_KEY=""
             fi
         fi
     fi
-    echo "$ssh_key"
+    echo "$SSH_KEY"
 }
 
 get_ssh_port() {
-    ssh_port=""
-    while [ -z "$ssh_port" ]; do
+    SSH_PORT=""
+    while [ -z "$SSH_PORT" ]; do
         printf "\n"
         printf "${CYAN}🌐 SSH Port Configuration${NC}\n"
         printf "Default SSH port is 22, but using a custom port increases security.\n"
@@ -343,19 +343,19 @@ get_ssh_port() {
         printf "SSH Port: "
         read -r ssh_port < /dev/tty
         
-        if [ -z "$ssh_port" ]; then
-            ssh_port="22222"
+        if [ -z "$SSH_PORT" ]; then
+            SSH_PORT="22222"
         fi
         
-        if ! validate_port "$ssh_port"; then
-            ssh_port=""
+        if ! validate_port "$SSH_PORT"; then
+            SSH_PORT=""
         fi
     done
-    echo "$ssh_port"
+    echo "$SSH_PORT"
 }
 
 get_bbr_option() {
-    enable_bbr=""
+    ENABLE_BBR=""
     
     printf "\n"
     printf "${CYAN}🚀 BBR TCP Congestion Control Configuration${NC}\n"
@@ -373,15 +373,15 @@ get_bbr_option() {
     printf "  • Modern network hardware recommended\n"
     printf "\n"
     
-    while [ -z "$enable_bbr" ]; do
+    while [ -z "$ENABLE_BBR" ]; do
         printf "Enable BBR TCP congestion control? (y/N): "
         read -r enable_bbr < /dev/tty
         
-        if [ -z "$enable_bbr" ]; then
-            enable_bbr="n"
+        if [ -z "$ENABLE_BBR" ]; then
+            ENABLE_BBR="n"
         fi
         
-        if [ "$enable_bbr" = "y" ] || [ "$enable_bbr" = "Y" ]; then
+        if [ "$ENABLE_BBR" = "y" ] || [ "$ENABLE_BBR" = "Y" ]; then
             # Check if BBR is available
             if modinfo tcp_bbr >/dev/null 2>&1; then
                 printf "✅ BBR module is available\n"
@@ -394,7 +394,7 @@ get_bbr_option() {
                 if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                     break
                 else
-                    enable_bbr=""
+                    ENABLE_BBR=""
                 fi
             fi
         else
@@ -403,7 +403,7 @@ get_bbr_option() {
         fi
     done
     
-    if [ "$enable_bbr" = "y" ] || [ "$enable_bbr" = "Y" ]; then
+    if [ "$ENABLE_BBR" = "y" ] || [ "$ENABLE_BBR" = "Y" ]; then
         echo "true"
     else
         echo "false"
@@ -412,12 +412,12 @@ get_bbr_option() {
 
 # Configuration summary
 show_configuration_summary() {
-    hostname="$1"
-    username="$2"
-    ssh_port="$3"
-    has_password="$4"
-    has_ssh_key="$5"
-    enable_bbr="$6"
+    HOSTNAME="$1"
+    USERNAME="$2"
+    SSH_PORT="$3"
+    has_PASSWORD="$4"
+    has_SSH_KEY="$5"
+    ENABLE_BBR="$6"
     
     printf "\n"
     printf "═══════════════════════════════════════════════════════════════\n"
@@ -425,9 +425,9 @@ show_configuration_summary() {
     printf "═══════════════════════════════════════════════════════════════\n"
     printf "\n"
     printf "${CYAN}Server Settings:${NC}\n"
-    printf "  Hostname: %s\n" "$hostname"
-    printf "  Username: %s\n" "$username"
-    printf "  SSH Port: %s\n" "$ssh_port"
+    printf "  Hostname: %s\n" "$HOSTNAME"
+    printf "  Username: %s\n" "$USERNAME"
+    printf "  SSH Port: %s\n" "$SSH_PORT"
     printf "\n"
     printf "${CYAN}Security Settings:${NC}\n"
     printf "  Root Login: Disabled\n"
@@ -436,7 +436,7 @@ show_configuration_summary() {
     printf "  User Password: %s\n" "$(if [ "$has_password" = "true" ]; then echo "Set"; else echo "Not set"; fi)"
     printf "\n"
     printf "${CYAN}Network Optimization:${NC}\n"
-    printf "  BBR TCP Control: %s\n" "$(if [ "$enable_bbr" = "true" ]; then echo "Enabled"; else echo "Disabled"; fi)"
+    printf "  BBR TCP Control: %s\n" "$(if [ "$ENABLE_BBR" = "true" ]; then echo "Enabled"; else echo "Disabled"; fi)"
     printf "\n"
     printf "${CYAN}Software Installation:${NC}\n"
     printf "  Docker: Will be installed\n"
@@ -449,12 +449,12 @@ show_configuration_summary() {
 
 # Final confirmation
 confirm_execution() {
-    hostname="$1"
-    ssh_port="$2"
+    HOSTNAME="$1"
+    SSH_PORT="$2"
     
     printf "${YELLOW}⚠️  IMPORTANT WARNINGS:${NC}\n"
     printf "\n"
-    printf "• SSH will be configured on port %s\n" "$ssh_port"
+    printf "• SSH will be configured on port %s\n" "$SSH_PORT"
     printf "• Root login will be disabled\n"
     printf "• Password authentication will be disabled\n"
     printf "• Only SSH key authentication will be allowed\n"
@@ -482,82 +482,82 @@ update_system() {
 }
 
 set_hostname() {
-    hostname="$1"
+    HOSTNAME="$1"
     
-    log_info "Setting hostname to: $hostname"
+    log_info "Setting hostname to: $HOSTNAME"
     
     # Set hostname temporarily
-    hostnamectl set-hostname "$hostname" || error_exit "Failed to set hostname"
+    hostnamectl set-hostname "$HOSTNAME" || error_exit "Failed to set hostname"
     
     # Update /etc/hosts
-    sed -i "s/127.0.1.1.*/127.0.1.1\t$hostname/" /etc/hosts || error_exit "Failed to update /etc/hosts"
+    sed -i "s/127.0.1.1.*/127.0.1.1\t$HOSTNAME/" /etc/hosts || error_exit "Failed to update /etc/hosts"
     
-    log_success "Hostname set to: $hostname"
+    log_success "Hostname set to: $HOSTNAME"
 }
 
 create_ubuntu_user() {
-    username="$1"
-    password="$2"
+    USERNAME="$1"
+    PASSWORD="$2"
     
-    log_info "Creating user: $username"
+    log_info "Creating user: $USERNAME"
     
     # Check if user already exists
-    if id "$username" >/dev/null 2>&1; then
-        log_warning "User $username already exists"
+    if id "$USERNAME" >/dev/null 2>&1; then
+        log_warning "User $USERNAME already exists"
         return 0
     fi
     
     # Create user with sudo privileges
-    useradd -m -s /bin/bash "$username" || error_exit "Failed to create user $username"
+    useradd -m -s /bin/bash "$USERNAME" || error_exit "Failed to create user $USERNAME"
     
     # Add user to sudo group
-    usermod -aG sudo "$username" || error_exit "Failed to add $username to sudo group"
+    usermod -aG sudo "$USERNAME" || error_exit "Failed to add $USERNAME to sudo group"
     
     # Set password if provided
-    if [ -n "$password" ]; then
-        echo "$username:$password" | chpasswd || error_exit "Failed to set password for $username"
-        log_success "Password set for user: $username"
+    if [ -n "$PASSWORD" ]; then
+        echo "$USERNAME:$PASSWORD" | chpasswd || error_exit "Failed to set password for $USERNAME"
+        log_success "Password set for user: $USERNAME"
     fi
     
     # Configure passwordless sudo for the user
-    echo "$username ALL=(ALL) NOPASSWD:ALL" | tee "/etc/sudoers.d/dont-prompt-$username-for-sudo-password" >/dev/null || error_exit "Failed to configure passwordless sudo for $username"
-    chmod 440 "/etc/sudoers.d/dont-prompt-$username-for-sudo-password" || error_exit "Failed to set sudoers file permissions"
+    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" | tee "/etc/sudoers.d/dont-prompt-$USERNAME-for-sudo-password" >/dev/null || error_exit "Failed to configure passwordless sudo for $USERNAME"
+    chmod 440 "/etc/sudoers.d/dont-prompt-$USERNAME-for-sudo-password" || error_exit "Failed to set sudoers file permissions"
     
-    log_success "User $username created successfully with sudo privileges and passwordless sudo configured"
+    log_success "User $USERNAME created successfully with sudo privileges and passwordless sudo configured"
 }
 
 setup_ssh_key() {
-    username="$1"
-    ssh_key="$2"
+    USERNAME="$1"
+    SSH_KEY="$2"
     
-    if [ -z "$ssh_key" ]; then
+    if [ -z "$SSH_KEY" ]; then
         log_warning "No SSH key provided, skipping SSH key setup"
         return 0
     fi
     
-    log_info "Setting up SSH key for user: $username"
+    log_info "Setting up SSH key for user: $USERNAME"
     
     # Create .ssh directory
-    ssh_dir="/home/$username/.ssh"
+    ssh_dir="/home/$USERNAME/.ssh"
     mkdir -p "$ssh_dir" || error_exit "Failed to create .ssh directory"
     
     # Set proper permissions
     chmod 700 "$ssh_dir" || error_exit "Failed to set .ssh directory permissions"
     
     # Add SSH key to authorized_keys
-    echo "$ssh_key" >> "$ssh_dir/authorized_keys" || error_exit "Failed to add SSH key"
+    echo "$SSH_KEY" >> "$ssh_dir/authorized_keys" || error_exit "Failed to add SSH key"
     
     # Set proper permissions for authorized_keys
     chmod 600 "$ssh_dir/authorized_keys" || error_exit "Failed to set authorized_keys permissions"
     
     # Change ownership
-    chown -R "$username:$username" "$ssh_dir" || error_exit "Failed to change .ssh directory ownership"
+    chown -R "$USERNAME:$USERNAME" "$ssh_dir" || error_exit "Failed to change .ssh directory ownership"
     
-    log_success "SSH key setup completed for user: $username"
+    log_success "SSH key setup completed for user: $USERNAME"
 }
 
 configure_ssh_security() {
-    ssh_port="$1"
+    SSH_PORT="$1"
     
     log_info "Configuring SSH security settings..."
     
@@ -567,7 +567,7 @@ configure_ssh_security() {
     # Create new sshd_config with security settings
     cat > /etc/ssh/sshd_config << EOF
 # SSH Security Configuration
-Port $ssh_port
+Port $SSH_PORT
 Protocol 2
 
 # Authentication
@@ -666,7 +666,7 @@ install_docker() {
 }
 
 configure_firewall() {
-    ssh_port="$1"
+    SSH_PORT="$1"
     
     log_info "Configuring UFW firewall..."
     
@@ -681,7 +681,7 @@ configure_firewall() {
     ufw default allow outgoing || error_exit "Failed to set UFW default allow outgoing"
     
     # Allow SSH on custom port
-    ufw allow "$ssh_port/tcp" || error_exit "Failed to allow SSH port in UFW"
+    ufw allow "$SSH_PORT/tcp" || error_exit "Failed to allow SSH port in UFW"
     
     # Allow HTTP and HTTPS
     ufw allow 80/tcp || error_exit "Failed to allow HTTP in UFW"
@@ -691,13 +691,13 @@ configure_firewall() {
     ufw --force enable || error_exit "Failed to enable UFW"
     
     log_success "Firewall configured successfully"
-    log_warning "SSH port $ssh_port is open. Make sure to test SSH connection before closing this session!"
+    log_warning "SSH port $SSH_PORT is open. Make sure to test SSH connection before closing this session!"
 }
 
 configure_bbr() {
-    enable_bbr="$1"
+    ENABLE_BBR="$1"
     
-    if [ "$enable_bbr" != "true" ]; then
+    if [ "$ENABLE_BBR" != "true" ]; then
         log_info "BBR configuration skipped"
         return 0
     fi
@@ -788,48 +788,48 @@ EOF
 # Main function
 main() {
     # Parse command line arguments first to handle --help
-    hostname=""
-    username=""
-    password=""
-    ssh_key=""
-    ssh_port=""
-    enable_bbr="false"
-    interactive_mode=true
+    HOSTNAME=""
+    USERNAME=""
+    PASSWORD=""
+    SSH_KEY=""
+    SSH_PORT=""
+    ENABLE_BBR="false"
+    INTERACTIVE_MODE=true
     
     while [ $# -gt 0 ]; do
         case $1 in
             --hostname)
-                hostname="$2"
-                interactive_mode=false
+                HOSTNAME="$2"
+                INTERACTIVE_MODE=false
                 shift 2
                 ;;
             --username)
-                username="$2"
-                interactive_mode=false
+                USERNAME="$2"
+                INTERACTIVE_MODE=false
                 shift 2
                 ;;
             --password)
-                password="$2"
-                interactive_mode=false
+                PASSWORD="$2"
+                INTERACTIVE_MODE=false
                 shift 2
                 ;;
             --ssh-key)
-                ssh_key="$2"
-                interactive_mode=false
+                SSH_KEY="$2"
+                INTERACTIVE_MODE=false
                 shift 2
                 ;;
             --ssh-port)
-                ssh_port="$2"
-                interactive_mode=false
+                SSH_PORT="$2"
+                INTERACTIVE_MODE=false
                 shift 2
                 ;;
             --enable-bbr)
-                enable_bbr="true"
-                interactive_mode=false
+                ENABLE_BBR="true"
+                INTERACTIVE_MODE=false
                 shift
                 ;;
             --non-interactive)
-                interactive_mode=false
+                INTERACTIVE_MODE=false
                 shift
                 ;;
             --help)
@@ -863,66 +863,66 @@ main() {
     check_prerequisites
     
     # Interactive mode - collect missing parameters
-    if [ "$interactive_mode" = true ]; then
+    if [ "$INTERACTIVE_MODE" = true ]; then
         log_info "Running in interactive mode..."
         printf "\n"
         
         # Get hostname
-        if [ -z "$hostname" ]; then
-            hostname=$(get_hostname)
+        if [ -z "$HOSTNAME" ]; then
+            HOSTNAME=$(get_hostname)
         fi
         
         # Get username
-        if [ -z "$username" ]; then
-            username=$(get_username)
+        if [ -z "$USERNAME" ]; then
+            USERNAME=$(get_username)
         fi
         
         # Get password
-        if [ -z "$password" ]; then
-            password=$(get_password)
+        if [ -z "$PASSWORD" ]; then
+            PASSWORD=$(get_password)
         fi
         
         # Get SSH key
-        if [ -z "$ssh_key" ]; then
-            ssh_key=$(get_ssh_key)
+        if [ -z "$SSH_KEY" ]; then
+            SSH_KEY=$(get_ssh_key)
         fi
         
         # Get SSH port
-        if [ -z "$ssh_port" ]; then
-            ssh_port=$(get_ssh_port)
+        if [ -z "$SSH_PORT" ]; then
+            SSH_PORT=$(get_ssh_port)
         fi
         
         # Get BBR option
-        if [ "$enable_bbr" = "false" ]; then
-            enable_bbr=$(get_bbr_option)
+        if [ "$ENABLE_BBR" = "false" ]; then
+            ENABLE_BBR=$(get_bbr_option)
         fi
         
         # Show configuration summary
-        show_configuration_summary "$hostname" "$username" "$ssh_port" \
-            "$(if [ -n "$password" ]; then echo "true"; else echo "false"; fi)" \
-            "$(if [ -n "$ssh_key" ]; then echo "true"; else echo "false"; fi)" \
-            "$enable_bbr"
+        show_configuration_summary "$HOSTNAME" "$USERNAME" "$SSH_PORT" \
+            "$(if [ -n "$PASSWORD" ]; then echo "true"; else echo "false"; fi)" \
+            "$(if [ -n "$SSH_KEY" ]; then echo "true"; else echo "false"; fi)" \
+            "$ENABLE_BBR"
         
         # Confirm configuration
-        confirm_execution "$hostname" "$ssh_port"
+        confirm_execution "$HOSTNAME" "$SSH_PORT"
     else
         # Non-interactive mode - validate required parameters
-        if [ -z "$hostname" ]; then
+        if [ -z "$HOSTNAME" ]; then
             error_exit "Hostname is required in non-interactive mode"
         fi
         
-        if [ -z "$username" ]; then
-            username="ubuntu"
+        if [ -z "$USERNAME" ]; then
+            USERNAME="ubuntu"
         fi
         
-        if [ -z "$ssh_port" ]; then
-            ssh_port="22222"
+        if [ -z "$SSH_PORT" ]; then
+            SSH_PORT="22222"
         fi
         
         log_info "Running in non-interactive mode..."
-        log_info "Hostname: $hostname"
-        log_info "Username: $username"
-        log_info "SSH Port: $ssh_port"
+        log_info "Hostname: $HOSTNAME"
+        log_info "Username: $USERNAME"
+        log_info "SSH Port: $SSH_PORT"
     fi
     
     # Start setup process
@@ -932,25 +932,25 @@ main() {
     update_system
     
     # Set hostname
-    set_hostname "$hostname"
+    set_hostname "$HOSTNAME"
     
     # Create user
-    create_ubuntu_user "$username" "$password"
+    create_ubuntu_user "$USERNAME" "$PASSWORD"
     
     # Setup SSH key
-    setup_ssh_key "$username" "$ssh_key"
+    setup_ssh_key "$USERNAME" "$SSH_KEY"
     
     # Configure SSH security
-    configure_ssh_security "$ssh_port"
+    configure_ssh_security "$SSH_PORT"
     
     # Install Docker
     install_docker
     
     # Configure firewall
-    configure_firewall "$ssh_port"
+    configure_firewall "$SSH_PORT"
     
     # Configure BBR
-    configure_bbr "$enable_bbr"
+    configure_bbr "$ENABLE_BBR"
     
     # Final message
     printf "\n"
@@ -958,17 +958,17 @@ main() {
     printf "${GREEN}🎉 Setup Completed Successfully! 🎉${NC}\n"
     printf "═══════════════════════════════════════════════════════════════\n"
     printf "\n"
-    log_success "Server hostname: $hostname"
-    log_success "SSH port: $ssh_port"
-    log_success "User created: $username"
+    log_success "Server hostname: $HOSTNAME"
+    log_success "SSH port: $SSH_PORT"
+    log_success "User created: $USERNAME"
     log_success "Docker installed: $(docker --version)"
     log_success "Docker Compose installed: $(docker-compose --version)"
-    if [ "$enable_bbr" = "true" ]; then
+    if [ "$ENABLE_BBR" = "true" ]; then
         log_success "BBR TCP congestion control: Enabled"
     fi
     printf "\n"
-    log_warning "IMPORTANT: Test SSH connection on port $ssh_port before closing this session!"
-    log_warning "SSH command: ssh -p $ssh_port $username@$(hostname -I | awk '{print $1}')"
+    log_warning "IMPORTANT: Test SSH connection on port $SSH_PORT before closing this session!"
+    log_warning "SSH command: ssh -p $SSH_PORT $USERNAME@$(hostname -I | awk '{print $1}')"
     printf "\n"
 }
 
