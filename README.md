@@ -1,224 +1,137 @@
-# Ubuntu Server Setup Script
+# Ubuntu Server Setup - Unified Installer
 
-A comprehensive script to configure Ubuntu servers with security hardening and Docker installation.
+A single, comprehensive script to configure Ubuntu servers with security hardening, Docker installation, and network optimization.
 
-## Features
+## 🚀 Quick Start
 
-- ✅ Set custom hostname
-- ✅ Create Ubuntu user with sudo privileges
-- ✅ Configure SSH key authentication
-- ✅ SSH security hardening (disable root login, disable password auth, custom port)
-- ✅ Install Docker and Docker Compose
-- ✅ Configure UFW firewall
-- ✅ Enable BBR TCP congestion control for better network performance
-- ✅ Comprehensive error handling and logging
+```bash
+# Download and run (interactive mode - recommended)
+curl -fsSL https://raw.githubusercontent.com/your-repo/quick-setup/main/installer.sh | sh
 
-## Prerequisites
+# Or download first, then run
+wget https://raw.githubusercontent.com/your-repo/quick-setup/main/installer.sh
+sh installer.sh
+```
+
+## 📋 Features
+
+- ✅ **Hostname Configuration** - Set custom server hostname
+- ✅ **User Management** - Create user with sudo privileges and passwordless sudo
+- ✅ **SSH Security** - Hardened SSH with custom port, key-only auth
+- ✅ **Docker Installation** - Docker CE and Docker Compose
+- ✅ **Firewall Setup** - UFW configuration with minimal open ports
+- ✅ **BBR TCP Control** - Network performance optimization (optional)
+- ✅ **Input Validation** - Comprehensive validation and error handling
+- ✅ **Sh Compatible** - Works with both bash and sh
+
+## 🎯 Usage
+
+### Interactive Mode (Recommended)
+```bash
+sh installer.sh
+```
+Guided setup with validation and confirmation prompts.
+
+### Non-Interactive Mode
+```bash
+sh installer.sh --hostname myserver --ssh-key "ssh-rsa..." --enable-bbr
+```
+
+### Command Line Options
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--hostname HOSTNAME` | Set server hostname | Interactive prompt |
+| `--username USERNAME` | Create user | `ubuntu` |
+| `--password PASSWORD` | Set user password | No password |
+| `--ssh-key SSH_KEY` | SSH public key | Interactive prompt |
+| `--ssh-port PORT` | SSH port | `22222` |
+| `--enable-bbr` | Enable BBR TCP control | `false` |
+| `--non-interactive` | Force non-interactive | Interactive mode |
+| `--help` | Show help | - |
+
+## 📝 Examples
+
+```bash
+# Interactive setup
+sh installer.sh
+
+# Full automated setup
+sh installer.sh \
+  --hostname production-server \
+  --username deploy \
+  --ssh-key "ssh-rsa AAAAB3NzaC1yc2E..." \
+  --ssh-port 2222 \
+  --enable-bbr
+
+# Minimal setup
+sh installer.sh --hostname myserver --non-interactive
+```
+
+## 🔒 Security Features
+
+### SSH Hardening
+- Custom SSH port (default: 22222)
+- Root login disabled
+- Password authentication disabled
+- Key-based authentication only
+- Strong cipher suites
+- Connection limits and timeouts
+
+### Firewall Configuration
+- UFW enabled with default deny
+- Only SSH, HTTP, HTTPS allowed
+- All outbound connections permitted
+
+### BBR Network Optimization
+- Modern TCP congestion control
+- Higher throughput and lower latency
+- Better performance over lossy networks
+- Requires Linux kernel 4.9+
+
+## ⚠️ Important Notes
+
+### Before Running
+1. **Backup Important Data** - Always backup before running system scripts
+2. **Test SSH Key** - Ensure your SSH key is valid and working
+3. **Alternative Access** - Make sure you have alternative server access
+
+### After Running
+1. **Test SSH Connection** - Verify SSH access on new port before closing session
+2. **Update Firewall** - Configure additional ports if needed
+3. **Docker Permissions** - Log out/in for Docker group permissions
+
+## 🛠️ System Requirements
 
 - Ubuntu 18.04 or later
 - Root access (sudo)
 - Internet connection
+- Linux kernel 4.9+ (for BBR support)
 
-## Usage
+## 📊 What Gets Configured
 
-### 🚀 Interactive Setup (Recommended)
+1. **System Updates** - Package list and system upgrades
+2. **Hostname** - Server hostname and /etc/hosts
+3. **User Account** - New user with sudo privileges
+4. **SSH Configuration** - Security hardening and key setup
+5. **Docker Installation** - Docker CE and Compose
+6. **Firewall Setup** - UFW with minimal rules
+7. **BBR Configuration** - TCP congestion control (optional)
 
-The easiest way to configure your Ubuntu server is using the interactive setup wizard:
+## 🔧 Troubleshooting
 
-```bash
-# Make scripts executable
-chmod +x *.sh
-
-# Run the interactive setup wizard
-sudo ./interactive-setup.sh
-```
-
-The interactive wizard provides:
-- ✅ User-friendly prompts with validation
-- ✅ Configuration preview before applying changes
-- ✅ Safety confirmations for destructive operations
-- ✅ Input validation with helpful error messages
-- ✅ ASCII art banner and colored output
-
-### Basic Usage
-
-```bash
-# Make script executable
-chmod +x ubuntu-setup.sh
-
-# Run with interactive prompts (default mode)
-sudo ./ubuntu-setup.sh
-```
-
-### Advanced Usage with Parameters
-
-```bash
-# Full configuration with all parameters
-sudo ./ubuntu-setup.sh \
-  --hostname myserver \
-  --username admin \
-  --password mypassword \
-  --ssh-key "ssh-rsa AAAAB3NzaC1yc2E..." \
-  --ssh-port 22222
-```
-
-### Command Line Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--hostname HOSTNAME` | Set the server hostname | Interactive prompt |
-| `--username USERNAME` | Create user with specified name | `ubuntu` |
-| `--password PASSWORD` | Set password for the user | No password |
-| `--ssh-key SSH_KEY` | SSH public key for the user | Interactive prompt |
-| `--ssh-port PORT` | SSH port | `22222` |
-| `--enable-bbr` | Enable BBR TCP congestion control | `false` |
-| `--non-interactive` | Force non-interactive mode | Interactive mode |
-| `--help` | Show help message | - |
-
-### Interactive Features
-
-The interactive mode includes:
-
-- **Input Validation**: Real-time validation of hostnames, usernames, passwords, SSH keys, and ports
-- **Configuration Preview**: See all settings before applying changes
-- **Safety Confirmations**: Multiple confirmation prompts for destructive operations
-- **Password Strength**: Enforces strong password requirements
-- **SSH Key Validation**: Validates SSH key format before acceptance
-- **Port Availability**: Checks if ports are already in use
-- **User-Friendly Interface**: Colored output, clear prompts, and helpful error messages
-
-## Examples
-
-### Example 1: Interactive Setup (Recommended)
-```bash
-# Run the interactive wizard with guided prompts
-sudo ./interactive-setup.sh
-```
-
-### Example 2: Basic Setup
-```bash
-sudo ./ubuntu-setup.sh --hostname web-server
-```
-
-### Example 3: Full Configuration with BBR
-```bash
-sudo ./ubuntu-setup.sh \
-  --hostname production-server \
-  --username deploy \
-  --ssh-key "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC..." \
-  --ssh-port 2222 \
-  --enable-bbr
-```
-
-### Example 4: With Password Authentication
-```bash
-sudo ./ubuntu-setup.sh \
-  --hostname dev-server \
-  --username developer \
-  --password securepassword123 \
-  --ssh-port 2222
-```
-
-### Example 5: Mixed Mode (Some parameters provided, others prompted)
-```bash
-sudo ./ubuntu-setup.sh --hostname myserver --ssh-port 2222
-```
-
-## What the Script Does
-
-### 1. System Updates
-- Updates package list
-- Upgrades all installed packages
-
-### 2. Hostname Configuration
-- Sets the system hostname
-- Updates `/etc/hosts` file
-
-### 3. User Management
-- Creates a new user with sudo privileges
-- Optionally sets a password
-- Adds user to docker group (after Docker installation)
-
-### 4. SSH Configuration
-- Sets up SSH key authentication
-- Configures SSH security settings:
-  - Disables root login
-  - Disables password authentication
-  - Changes SSH port to 22222 (or specified port)
-  - Uses strong ciphers and MACs
-  - Sets connection limits and timeouts
-
-### 5. Docker Installation
-- Removes old Docker versions
-- Installs Docker CE from official repository
-- Starts and enables Docker service
-- Adds user to docker group
-
-### 6. Docker Compose Installation
-- Installs Docker Compose standalone version
-- Creates symlinks for easy access
-
-### 7. Firewall Configuration
-- Installs and configures UFW
-- Allows SSH on custom port
-- Allows HTTP (80) and HTTPS (443)
-- Denies all other incoming connections
-
-### 8. BBR TCP Congestion Control (Optional)
-- Enables BBR (Bottleneck Bandwidth and RTT) algorithm
-- Improves network performance and reduces latency
-- Requires Linux kernel 4.9+ with BBR support
-- Configures automatic loading at boot
-
-## Security Features
-
-### SSH Hardening
-- **Port Change**: SSH runs on port 22222 (configurable)
-- **Root Login Disabled**: Prevents direct root access
-- **Password Auth Disabled**: Only key-based authentication
-- **Strong Ciphers**: Uses modern, secure cipher suites
-- **Connection Limits**: Limits authentication attempts and sessions
-- **Timeouts**: Automatic disconnection for idle sessions
-
-### Firewall Configuration
-- **Default Deny**: All incoming connections blocked by default
-- **Minimal Open Ports**: Only SSH, HTTP, and HTTPS allowed
-- **Outbound Allowed**: All outbound connections permitted
-
-### BBR TCP Congestion Control
-- **Modern Algorithm**: Uses Google's BBR algorithm for better performance
-- **High Throughput**: Optimized for high-bandwidth, high-latency networks
-- **Reduced Latency**: Minimizes bufferbloat and improves responsiveness
-- **Better Fairness**: More stable and fair bandwidth sharing
-- **Automatic Loading**: Configured to load at system boot
-
-## Important Notes
-
-### ⚠️ Before Running
-1. **Backup Important Data**: Always backup important data before running system scripts
-2. **Test SSH Key**: Ensure your SSH key is valid and working
-3. **Current Session**: The script will change SSH settings - make sure you have alternative access
-
-### ⚠️ After Running
-1. **Test SSH Connection**: Verify you can connect via SSH on the new port
-2. **Update Firewall Rules**: If you need additional ports, configure them in UFW
-3. **Docker Permissions**: Log out and back in for Docker group permissions to take effect
-
-### 🔧 Troubleshooting
-
-#### SSH Connection Issues
+### SSH Issues
 ```bash
 # Test SSH configuration
 sudo sshd -t
 
-# Check SSH service status
+# Check SSH service
 sudo systemctl status ssh
 
-# View SSH logs
+# View logs
 sudo journalctl -u ssh
 ```
 
-#### Docker Issues
+### Docker Issues
 ```bash
 # Check Docker status
 sudo systemctl status docker
@@ -230,55 +143,26 @@ sudo docker run hello-world
 groups $USER
 ```
 
-#### Firewall Issues
+### BBR Issues
 ```bash
-# Check UFW status
-sudo ufw status
+# Check BBR module
+lsmod | grep tcp_bbr
 
-# View UFW logs
-sudo ufw show raw
+# Check congestion control
+sysctl net.ipv4.tcp_congestion_control
+
+# Check BBR config
+grep -r bbr /etc/sysctl.conf
 ```
 
-## File Locations
-
-- **Script**: `ubuntu-setup.sh`
-- **SSH Config Backup**: `/etc/ssh/sshd_config.backup`
-- **SSH Config**: `/etc/ssh/sshd_config`
-- **User Home**: `/home/[username]`
-- **Docker Socket**: `/var/run/docker.sock`
-
-## Customization
-
-### Adding More Users
-After running the script, you can add more users:
-```bash
-sudo adduser newuser
-sudo usermod -aG sudo newuser
-sudo usermod -aG docker newuser
-```
-
-### Opening Additional Ports
-```bash
-sudo ufw allow 8080/tcp  # Example: Allow port 8080
-sudo ufw reload
-```
-
-### Modifying SSH Settings
-Edit `/etc/ssh/sshd_config` and restart SSH:
-```bash
-sudo nano /etc/ssh/sshd_config
-sudo systemctl restart ssh
-```
-
-## Support
+## 📞 Support
 
 If you encounter issues:
+1. Check script output for error messages
+2. Verify system requirements
+3. Ensure proper permissions
+4. Check system logs for details
 
-1. Check the script output for error messages
-2. Verify all prerequisites are met
-3. Ensure you have proper permissions
-4. Check system logs for detailed error information
-
-## License
+## 📄 License
 
 This script is provided as-is for educational and automation purposes. Use at your own risk.
