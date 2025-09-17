@@ -186,24 +186,29 @@ check_prerequisites() {
 # Input validation functions
 validate_hostname() {
     HOSTNAME="$1"
+    printf "${BLUE}[DEBUG]${NC} Validating hostname: '$HOSTNAME'\n"
     
     if [ -z "$HOSTNAME" ]; then
+        printf "${RED}[DEBUG]${NC} Hostname is empty\n"
         printf "❌ Hostname cannot be empty\n"
         return 1
     fi
     
     # Basic hostname validation
     if ! echo "$HOSTNAME" | grep -qE '^[a-zA-Z0-9][a-zA-Z0-9-]*$'; then
+        printf "${RED}[DEBUG]${NC} Hostname format validation failed\n"
         printf "❌ Invalid hostname format\n"
         printf "   Use only alphanumeric characters and hyphens\n"
         return 1
     fi
     
     if [ ${#HOSTNAME} -gt 63 ]; then
+        printf "${RED}[DEBUG]${NC} Hostname too long (${#HOSTNAME} characters)\n"
         printf "❌ Hostname too long (max 63 characters)\n"
         return 1
     fi
     
+    printf "${GREEN}[DEBUG]${NC} Hostname validation successful\n"
     printf "✅ Hostname format is valid\n"
     return 0
 }
@@ -347,12 +352,18 @@ get_hostname() {
         echo ""
         echo -e "${CYAN}📝 Server Hostname Configuration${NC}"
         echo "Enter a hostname for this server (e.g., web-server, db-server):"
+        echo -e "${BLUE}[DEBUG]${NC} Prompting user for hostname input..."
         read -r -p "Hostname: " HOSTNAME
+        echo -e "${BLUE}[DEBUG]${NC} User entered: '$HOSTNAME'"
         
         if validate_hostname "$HOSTNAME"; then
+            echo -e "${GREEN}[DEBUG]${NC} Hostname validation passed"
             break
         else
+            echo -e "${RED}[DEBUG]${NC} Hostname validation failed"
             echo "Invalid hostname, please try again"
+            HOSTNAME=""  # Reset HOSTNAME to empty to continue the loop
+            echo -e "${BLUE}[DEBUG]${NC} Reset HOSTNAME to empty, continuing loop..."
         fi
     done
     echo "$HOSTNAME"
@@ -364,10 +375,13 @@ get_username() {
         echo ""
         echo -e "${CYAN}👤 User Account Configuration${NC}"
         echo "Enter a username to create (default: ubuntu):"
+        echo -e "${BLUE}[DEBUG]${NC} Prompting user for username input..."
         read -r -p "Username: " USERNAME
+        echo -e "${BLUE}[DEBUG]${NC} User entered: '$USERNAME'"
         
         if [ -z "$USERNAME" ]; then
             USERNAME="ubuntu"
+            echo -e "${BLUE}[DEBUG]${NC} Username was empty, using default: 'ubuntu'"
         fi
         
         if validate_username "$USERNAME"; then
@@ -457,10 +471,15 @@ get_ssh_port() {
         printf "${CYAN}🌐 SSH Port Configuration${NC}\n"
         printf "Default SSH port is 22, but using a custom port increases security.\n"
         printf "Enter SSH port (default: 22222):\n"
+        printf "${BLUE}[DEBUG]${NC} Prompting user for SSH port input...\n"
         read -r -p "SSH Port: " ssh_port
+        printf "${BLUE}[DEBUG]${NC} User entered: '$ssh_port'\n"
         
-        if [ -z "$SSH_PORT" ]; then
+        if [ -z "$ssh_port" ]; then
             SSH_PORT="22222"
+            printf "${BLUE}[DEBUG]${NC} SSH port was empty, using default: '22222'\n"
+        else
+            SSH_PORT="$ssh_port"
         fi
         
         if ! validate_port "$SSH_PORT"; then
@@ -490,10 +509,16 @@ get_bbr_option() {
     printf "\n"
     
     while [ -z "$ENABLE_BBR" ]; do
+        printf "${BLUE}[DEBUG]${NC} Prompting user for BBR option...\n"
         read -r -p "Enable BBR TCP congestion control? (y/N): " enable_bbr
+        printf "${BLUE}[DEBUG]${NC} User entered: '$enable_bbr'\n"
         
-        if [ -z "$ENABLE_BBR" ]; then
+        if [ -z "$enable_bbr" ]; then
             ENABLE_BBR="n"
+            printf "${BLUE}[DEBUG]${NC} BBR option was empty, using default: 'n'\n"
+        else
+            ENABLE_BBR="$enable_bbr"
+            printf "${BLUE}[DEBUG]${NC} BBR option set to: '$ENABLE_BBR'\n"
         fi
         
         if [ "$ENABLE_BBR" = "y" ] || [ "$ENABLE_BBR" = "Y" ]; then
