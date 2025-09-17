@@ -175,8 +175,7 @@ check_prerequisites() {
     if ! ping -c 1 8.8.8.8 >/dev/null 2>&1; then
         log_warning "No internet connectivity detected"
         printf "Some features may not work without internet access.\n"
-        printf "Continue anyway? (y/N): "
-        read -r confirm < /dev/tty
+        read -r -p "Continue anyway? (y/N): " confirm
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
             exit 0
         fi
@@ -294,8 +293,7 @@ validate_port() {
     
     if [ "$PORT" -lt 1024 ] && [ "$PORT" != "22" ]; then
         printf "⚠️  Warning: Port %s is a privileged port (< 1024)\n" "$PORT"
-        printf "Continue? (y/N): "
-        read -r confirm < /dev/tty
+        read -r -p "Continue? (y/N): " confirm
         if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
             return 1
         fi
@@ -379,8 +377,7 @@ show_feature_menu() {
 get_feature_selection() {
     while true; do
         show_feature_menu
-        echo -n "Please select an option (A/S/D/Q): "
-        read -r choice < /dev/tty
+        read -r -p "Please select an option (A/S/D/Q): " choice
         case "$choice" in
             [Aa])
                 echo -e "${GREEN}✅ Selected: Configure All Features${NC}"
@@ -418,72 +415,63 @@ get_selective_features() {
     echo ""
     
     # Feature 1: Hostname
-    echo -n "1. Configure server hostname? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "1. Configure server hostname? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,hostname"
         echo -e "${GREEN}✓ Hostname configuration enabled${NC}"
     fi
     
     # Feature 2: User Account
-    echo -n "2. Configure user account? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "2. Configure user account? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,user"
         echo -e "${GREEN}✓ User account configuration enabled${NC}"
     fi
     
     # Feature 3: SSH Security
-    echo -n "3. Configure SSH security? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "3. Configure SSH security? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,ssh"
         echo -e "${GREEN}✓ SSH security configuration enabled${NC}"
     fi
     
     # Feature 4: Docker
-    echo -n "4. Install Docker? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "4. Install Docker? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,docker"
         echo -e "${GREEN}✓ Docker installation enabled${NC}"
     fi
     
     # Feature 5: Firewall
-    echo -n "5. Configure firewall? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "5. Configure firewall? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,firewall"
         echo -e "${GREEN}✓ Firewall configuration enabled${NC}"
     fi
     
     # Feature 6: BBR
-    echo -n "6. Enable BBR network optimization? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "6. Enable BBR network optimization? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,bbr"
         echo -e "${GREEN}✓ BBR optimization enabled${NC}"
     fi
     
     # Feature 7: System Updates
-    echo -n "7. Update system packages? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "7. Update system packages? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,updates"
         echo -e "${GREEN}✓ System updates enabled${NC}"
     fi
     
     # Feature 8: Security Best Practices
-    echo -n "8. Apply security best practices? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "8. Apply security best practices? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,security"
         echo -e "${GREEN}✓ Security hardening enabled${NC}"
     fi
     
     # Feature 9: Development Tools
-    echo -n "9. Install development tools? (y/N): "
-    read -r choice < /dev/tty
+    read -r -p "9. Install development tools? (y/N): " choice
     if [ "$choice" = "y" ] || [ "$choice" = "Y" ]; then
         selected_features="$selected_features,devtools"
         echo -e "${GREEN}✓ Development tools enabled${NC}"
@@ -494,8 +482,7 @@ get_selective_features() {
     echo "$selected_features" | tr ',' '\n' | grep -v '^$' | sed 's/^/  • /'
     echo ""
     
-    echo -n "Proceed with selected features? (y/N): "
-    read -r confirm < /dev/tty
+    read -r -p "Proceed with selected features? (y/N): " confirm
     if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
         echo -e "${YELLOW}Configuration cancelled${NC}"
         exit 0
@@ -759,8 +746,7 @@ get_hostname() {
         echo ""
         echo -e "${CYAN}📝 Server Hostname Configuration${NC}"
         echo "Enter a hostname for this server (e.g., web-server, db-server):"
-        echo -n "Hostname: "
-        read -r HOSTNAME
+        read -r -p "Hostname: " HOSTNAME
         
         if validate_hostname "$HOSTNAME"; then
             break
@@ -777,8 +763,7 @@ get_username() {
         echo ""
         echo -e "${CYAN}👤 User Account Configuration${NC}"
         echo "Enter a username to create (default: ubuntu):"
-        echo -n "Username: "
-        read -r USERNAME < /dev/tty
+        read -r -p "Username: " USERNAME
         
         if [ -z "$USERNAME" ]; then
             USERNAME="ubuntu"
@@ -787,8 +772,7 @@ get_username() {
         if validate_username "$USERNAME"; then
             if id "$USERNAME" >/dev/null 2>&1; then
                 echo -e "⚠️  User '$USERNAME' already exists"
-                echo -n "Continue with existing user? (y/N): "
-                read -r confirm < /dev/tty
+                read -r -p "Continue with existing user? (y/N): " confirm
                 if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
                     USERNAME=""
                 else
@@ -811,8 +795,7 @@ get_password() {
     echo ""
     echo -e "${CYAN}🔐 Password Configuration${NC}"
     echo "Set a password for the user account?"
-    echo -n "Set password? (y/N): "
-        read -r set_password < /dev/tty
+    read -r -p "Set password? (y/N): " set_password
     
     if [ "$set_password" = "y" ] || [ "$set_password" = "Y" ]; then
         while [ -z "$PASSWORD" ] || [ "$PASSWORD" != "$PASSWORD_confirm" ]; do
@@ -824,11 +807,9 @@ get_password() {
             printf "  • At least one number\n"
             printf "\n"
             
-            printf "Enter password: "
-            read -rs password < /dev/tty
+            read -rs -p "Enter password: " password
             printf "\n"
-            printf "Confirm password: "
-            read -rs password_confirm < /dev/tty
+            read -rs -p "Confirm password: " password_confirm
             printf "\n"
             
             if [ -z "$PASSWORD" ]; then
@@ -854,14 +835,12 @@ get_ssh_key() {
     printf "\n"
     printf "Example: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC...\n"
     printf "\n"
-    printf "SSH Public Key: "
-    read -r ssh_key < /dev/tty
+    read -r -p "SSH Public Key: " ssh_key
     
     if [ -n "$SSH_KEY" ]; then
         if ! validate_ssh_key "$SSH_KEY"; then
             printf "\n"
-            printf "Continue with invalid key format? (y/N): "
-            read -r confirm < /dev/tty
+            read -r -p "Continue with invalid key format? (y/N): " confirm
             if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
                 SSH_KEY=""
             fi
@@ -877,8 +856,7 @@ get_ssh_port() {
         printf "${CYAN}🌐 SSH Port Configuration${NC}\n"
         printf "Default SSH port is 22, but using a custom port increases security.\n"
         printf "Enter SSH port (default: 22222):\n"
-        printf "SSH Port: "
-        read -r ssh_port < /dev/tty
+        read -r -p "SSH Port: " ssh_port
         
         if [ -z "$SSH_PORT" ]; then
             SSH_PORT="22222"
@@ -911,8 +889,7 @@ get_bbr_option() {
     printf "\n"
     
     while [ -z "$ENABLE_BBR" ]; do
-        printf "Enable BBR TCP congestion control? (y/N): "
-        read -r enable_bbr < /dev/tty
+        read -r -p "Enable BBR TCP congestion control? (y/N): " enable_bbr
         
         if [ -z "$ENABLE_BBR" ]; then
             ENABLE_BBR="n"
@@ -926,8 +903,7 @@ get_bbr_option() {
             else
                 printf "❌ BBR module not available in current kernel\n"
                 printf "   BBR requires Linux kernel 4.9+ with BBR support\n"
-                printf "Continue anyway (may fail)? (y/N): "
-                read -r confirm < /dev/tty
+                read -r -p "Continue anyway (may fail)? (y/N): " confirm
                 if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
                     break
                 else
@@ -1000,8 +976,7 @@ confirm_execution() {
     printf "${RED}This will make permanent changes to your system.${NC}\n"
     printf "\n"
     
-    printf "Do you want to proceed with this configuration? (y/N): "
-    read -r confirm < /dev/tty
+    read -r -p "Do you want to proceed with this configuration? (y/N): " confirm
     if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
         printf "\n"
         log_info "Configuration cancelled by user."
